@@ -1,0 +1,34 @@
+#!/usr/bin/env python
+
+import optparse
+import requests
+import fileinput
+import multiprocessing
+
+seen = {}
+
+def unshorten(url):
+    if url in seen:
+       return seen[url]
+
+    new_url = url
+    try:
+        r = requests.get(url)
+        if r.status_code == 200:
+           new_url = r.url
+    except:
+        # TODO: maybe log something here?
+        pass
+
+    seen[url] = new_url
+    return new_url
+
+if __name__ == "__main__":
+    parser = optparse.OptionParser()
+    parser.add_option("-p", "--processes", dest="processes", help="concurrent processes to use to do lookups", type="int", default=1)
+    (opts, args) = parser.parse_args()
+
+    pool = multiprocessing.Pool(processes=opts.processes)
+    for url in pool.imap_unordered(unshorten, fileinput.input(args)):
+        print url
+    pool.close()
